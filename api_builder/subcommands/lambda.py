@@ -3,6 +3,9 @@ import glob
 import shutil
 from subprocess import call
 import boto3
+from api_builder import cloudformation
+from api_builder import configuration
+import time
 
 # valid actions to take
 _clean = 'clean'
@@ -16,7 +19,9 @@ _private_dir = os.path.join(_build_dir, "private")
 _deps_dir = os.path.join(_private_dir, "deps")
 _zip_dir = os.path.join(_private_dir, "lib")
 _project_name = os.path.basename(_base_dir)
-_output_file = os.path.join(_build_dir, _project_name)
+
+#todo: add delimiter maybe reconsider naming strategy
+_output_file = os.path.join(_build_dir, _project_name + str(time.time()))
 
 
 def get_description():
@@ -41,21 +46,20 @@ def set_args(parser):
         choices=action_choices,
         nargs="?")
 
-    parser.add_argument("-b", "--bucket")
-
 
 def execute(args):
 
     actions = [args.action1, args.action2, args.action3]
+    if _release in actions:
+        clean(args)
+        build(args)
+        release(args)
 
     if _clean in actions:
         clean(args)
 
     if _build in actions:
         build(args)
-
-    if _release in actions:
-        release(args)
 
 
 def clean(args):
@@ -73,15 +77,28 @@ def build(args):
 
 
 def release(args):
-    print("Uploading to s3")
-    if args.bucket is None:
-        raise ValueError('You must specify a bucket (--bucket) in order to release')
 
-    s3 = boto3.resource('s3')
+    configuration.check_bootstrap()
+    conf = configuration.get_zlab_conf()
+    if conf["api_name"] is None:
+        raise ValueError('`api_name` must exist in zlab configuration file')
+
+    print("Updating lambda-pre-build stack")
+    conf['s3_bucket_name'] = 'zlab-' + conf["api_name"].lower() + '-lambda-code'
+    configuration.write_zlab_conf(conf)
+    cloudformation.main(conf["api_name"] + "-lambda-pre-build", "cloudformation\lambda-pre-build.yml", conf)
+
     zip_archive = _output_file + '.zip'
-    data = open(zip_archive, 'rb')
-    s3.Bucket(args.bucket).put_object(Key=os.path.basename(zip_archive), Body=data)
+    conf["s3_bucket_key"] = os.path.basename(zip_archive)
+    configuration.write_zlab_conf(conf)
 
+    print("Uploading " + zip_archive + " to bucket " + conf['s3_bucket_name'])
+    s3 = boto3.resource('s3')
+    data = open(zip_archive, 'rb')
+    s3.Bucket(conf["s3_bucket_name"]).put_object(Key=conf["s3_bucket_key"], Body=data)
+
+    print("Updating lambda-post-build stack")
+    cloudformation.main(conf["api_name"] + "-lambda-post-build", "cloudformation\lambda-post-build.yml", conf)
 
 def init_build_dirs():
 

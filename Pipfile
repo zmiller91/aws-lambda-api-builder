@@ -5,7 +5,9 @@ name = "pypi"
 
 [packages]
 "boto3" = "*"
+botocore = "*"
 aws-lambda-api-builder = {editable = true, path = "."}
+pystache = "*"
 
 [dev-packages]
 

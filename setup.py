@@ -24,6 +24,6 @@ setuptools.setup(
         ]
     },
       install_requires=[
-          'pipenv', 'boto3'
+          'pipenv', 'boto3', 'pystache', 'botocore'
       ],
 )
