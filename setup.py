@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="aws-lambda-api-builder",
-    version="0.0.3",
+    version="0.0.4",
     author="Zachary Miller",
     author_email="me@zackmiller.info",
     description="Build and deploy AWS API Gateways using AWS Lambda",

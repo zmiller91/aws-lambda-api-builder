@@ -53,8 +53,10 @@ def execute(ags):
     os.chdir(base_dir)
 
     # move all dependencies to zip directory
-    python_files = glob.iglob(os.path.join(deps_dir, ".venv", "Lib", "site-packages", "*"))
+    python_files = glob.iglob(os.path.join(deps_dir, ".venv", "**", "site-packages", "*"), recursive=True)
+    print(python_files)
     for file in python_files:
+        print(file)
         target_dir_name = os.path.join(zip_dir, os.path.basename(file))
         if not os.path.isdir(file):
             continue
@@ -66,3 +68,6 @@ def execute(ags):
 
     # zip the zip directory
     shutil.make_archive(output_file, 'zip', zip_dir)
+
+if __name__ == "__main__":
+    execute(None)
