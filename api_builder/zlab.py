@@ -5,7 +5,7 @@ import pkgutil
 from api_builder import configuration, subcommands
 
 
-def get_module_parser(mod, modname):
+def get_module_parser(mod, modname, parents=[], add_help=True):
     """
     Returns an argument parser for the sub-command's CLI.
 
@@ -15,7 +15,8 @@ def get_module_parser(mod, modname):
     """
     return argparse.ArgumentParser(
         usage=configuration.EXECUTABLE_NAME + ' ' + modname + ' [options]',
-        description=mod.get_description())
+        description=mod.get_description(), parents=parents,
+        add_help=add_help)
 
 
 def get_application_parser(commands):
@@ -70,7 +71,7 @@ def main():
     # Execute the sub-command
     if args.sub_command and not args.help:
         command = get_module(args.sub_command)
-        module_parser = get_module_parser(command, args.sub_command)
+        module_parser = get_module_parser(command, args.sub_command, parents=[application_parser], add_help=False)
         command.set_args(module_parser)
-        module_args = module_parser.parse_known_args()
-        command.execute(module_args[0])
+        module_args = module_parser.parse_args()
+        command.execute(module_args)

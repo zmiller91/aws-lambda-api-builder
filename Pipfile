@@ -4,7 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-requests = "*"
+"boto3" = "*"
+aws-lambda-api-builder = {editable = true, path = "."}
 
 [dev-packages]
 

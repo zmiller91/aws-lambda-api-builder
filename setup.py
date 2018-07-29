@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="aws-lambda-api-builder",
-    version="0.0.4",
+    version="0.0.6",
     author="Zachary Miller",
     author_email="me@zackmiller.info",
     description="Build and deploy AWS API Gateways using AWS Lambda",
@@ -22,5 +22,8 @@ setuptools.setup(
         'console_scripts': [
             'zlab=api_builder.zlab:main'
         ]
-    }
+    },
+      install_requires=[
+          'pipenv', 'boto3'
+      ],
 )
