@@ -1,6 +1,5 @@
 import os
 import glob
-import distutils
 import shutil
 from subprocess import call
 

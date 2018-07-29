@@ -1,8 +1,8 @@
 import argparse
 import importlib
 import pkgutil
-import subcommands
-import configuration
+
+from api_builder import configuration, subcommands
 
 
 def get_module_parser(mod, modname):
@@ -28,7 +28,7 @@ def get_application_parser(commands):
 
     parser = argparse.ArgumentParser(
         description=configuration.APPLICATION_DESCRIPTION,
-        usage = configuration.EXECUTABLE_NAME + ' [sub-command] [options]',
+        usage =configuration.EXECUTABLE_NAME + ' [sub-command] [options]',
         add_help=False)
 
     parser.add_argument(
@@ -47,10 +47,10 @@ def get_module(name):
     :param name: module name to import
     :return: the module object
     """
-    return importlib.import_module("subcommands." + name)
+    return importlib.import_module("api_builder.subcommands." + name)
 
 
-if __name__ == "__main__":
+def main():
 
     sub_commands = [m.name for m in pkgutil.iter_modules(subcommands.__path__)]
     application_parser = get_application_parser(sub_commands)
