@@ -1,0 +1,42 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'todo'
+Resources:
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+
+  TestLambda:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::ImportValue: {{api_name}}CodeDeployBucket
+        S3Key: {{s3_bucket_key}}
+      FunctionName: {{api_name}}-example-function
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Handler: "endpoint.main"
+      MemorySize: 128
+      Runtime: python3.6
+      Timeout: 15
+
+Outputs:
+
+  {{api_name}}TestLambdaArn:
+    Value:
+      Fn::GetAtt:
+      - TestLambda
+      - Arn
+    Description: Name of S3 bucket to hold website content
+    Export:
+      Name: {{api_name}}TestLambdaArn
