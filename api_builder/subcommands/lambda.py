@@ -10,7 +10,7 @@ import time
 # valid actions to take
 _clean = 'clean'
 _build = 'build'
-_release = 'release'
+_deploy = 'deploy'
 
 # Define the build directories and outputs
 _base_dir = os.getcwd()
@@ -19,9 +19,7 @@ _private_dir = os.path.join(_build_dir, "private")
 _deps_dir = os.path.join(_private_dir, "deps")
 _zip_dir = os.path.join(_private_dir, "lib")
 _project_name = os.path.basename(_base_dir)
-
-#todo: add delimiter maybe reconsider naming strategy
-_output_file = os.path.join(_build_dir, _project_name + str(time.time()))
+_output_file = os.path.join(_build_dir, _project_name + "." + str(time.time()))
 
 
 def get_description():
@@ -29,7 +27,7 @@ def get_description():
 
 
 def set_args(parser):
-    action_choices = [_clean, _build, _release]
+    action_choices = [_clean, _build, _deploy]
 
     parser.add_argument(
         'action1',
@@ -50,16 +48,16 @@ def set_args(parser):
 def execute(args):
 
     actions = [args.action1, args.action2, args.action3]
-    if _release in actions:
-        clean(args)
-        build(args)
-        release(args)
 
     if _clean in actions:
         clean(args)
 
     if _build in actions:
+        #todo: delete any old built .zip files
         build(args)
+
+    if _deploy in actions:
+        release(args)
 
 
 def clean(args):
@@ -73,32 +71,26 @@ def build(args):
     init_build_dirs()
     copy_source_files()
     copy_dep_files()
+
+    conf = configuration.get_zlab_conf()
+    conf["s3_bucket_key"] = os.path.basename(_output_file + '.zip')
+    configuration.write_zlab_conf(conf)
     shutil.make_archive(_output_file, 'zip', _zip_dir)
 
 
 def release(args):
-
     configuration.check_bootstrap()
     conf = configuration.get_zlab_conf()
-    if conf["api_name"] is None:
-        raise ValueError('`api_name` must exist in zlab configuration file')
-
-    print("Updating lambda-pre-build stack")
-    conf['s3_bucket_name'] = 'zlab-' + conf["api_name"].lower() + '-lambda-code'
-    configuration.write_zlab_conf(conf)
-    cloudformation.main(conf["api_name"] + "-lambda-pre-build", "cloudformation\lambda-pre-build.yml", conf)
-
-    zip_archive = _output_file + '.zip'
-    conf["s3_bucket_key"] = os.path.basename(zip_archive)
-    configuration.write_zlab_conf(conf)
-
+    zip_archive = os.path.join(_build_dir, conf["s3_bucket_key"])
     print("Uploading " + zip_archive + " to bucket " + conf['s3_bucket_name'])
     s3 = boto3.resource('s3')
+
+    #todo: check if file exists, if it does then no reason to delete
     data = open(zip_archive, 'rb')
     s3.Bucket(conf["s3_bucket_name"]).put_object(Key=conf["s3_bucket_key"], Body=data)
 
-    print("Updating lambda-post-build stack")
-    cloudformation.main(conf["api_name"] + "-lambda-post-build", "cloudformation\lambda-post-build.yml", conf)
+    print("Updating lambda stack")
+    cloudformation.main(conf["api_name"] + "-lambda", "cloudformation\lambda.yml", conf)
 
 def init_build_dirs():
 
